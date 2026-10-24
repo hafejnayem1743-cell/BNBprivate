@@ -58,13 +58,37 @@
         .markdown-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
         .markdown-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
         
-        /* Pulse Animation for Streaming Indicator */
-        @keyframes blink {
-            0% { opacity: 0.2; }
-            50% { opacity: 1; }
-            100% { opacity: 0.2; }
+        /* Smooth Micro Animations for Buttons */
+        button, a, .clickable-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .animate-blink { animation: blink 1.4s infinite; }
+        button:hover, .clickable-card:hover {
+            transform: translateY(-1px);
+        }
+        button:active, .clickable-card:active {
+            transform: translateY(0) scale(0.97);
+        }
+
+        /* Pulse Animation for Recording */
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .recording-pulse {
+            animation: pulse-red 1.5s infinite;
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+
+        /* Collapsed Sidebar Mode on Desktop */
+        aside.collapsed-sidebar {
+            width: 0px !important;
+            padding: 0px !important;
+            overflow: hidden !important;
+            border: none !important;
+            opacity: 0;
+        }
     </style>
 </head>
 <body class="bg-mainbg text-gray-100 font-sans h-full flex overflow-hidden">
@@ -73,7 +97,7 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
 
     <!-- Left Sidebar -->
-    <aside id="sidebar" class="w-64 bg-sidebarbg h-full flex flex-col justify-between p-3 border-r border-bordercolor/40 z-30 fixed md:static transition-transform duration-300 -translate-x-full md:translate-x-0">
+    <aside id="sidebar" class="w-64 bg-sidebarbg h-full flex flex-col justify-between p-3 border-r border-bordercolor/40 z-30 fixed md:static transition-all duration-300 -translate-x-full md:translate-x-0 shrink-0">
         
         <!-- Top Section -->
         <div class="flex flex-col gap-2 overflow-y-auto flex-1">
@@ -84,7 +108,7 @@
                     <span>BNBprivate</span>
                 </div>
                 <div class="flex items-center gap-1 text-textmuted">
-                    <button onclick="openSettingsModal()" title="Settings & Colab URL" class="p-2 hover:text-white hover:bg-hoverbg rounded-lg transition-colors">
+                    <button onclick="openSettingsModal()" title="Settings & Colab URL" class="p-2 hover:text-white hover:bg-hoverbg rounded-lg">
                         <i class="fa-solid fa-gear"></i>
                     </button>
                     <button onclick="toggleSidebar()" class="p-2 md:hidden hover:text-white hover:bg-hoverbg rounded-lg">
@@ -104,8 +128,8 @@
 
             <!-- Navigation List -->
             <nav class="flex flex-col gap-0.5 mt-2 text-sm text-gray-300">
-                <button onclick="showToast('Images feature available when connected to image models!')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
-                    <i class="fa-regular fa-image w-4 text-center"></i>
+                <button onclick="showToast('Images feature ready! Drop or paste images anytime.')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
+                    <i class="fa-regular fa-image w-4 text-center text-emerald-400"></i>
                     <span>Images</span>
                 </button>
                 <button onclick="showToast('Scheduled prompts active')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
@@ -132,7 +156,7 @@
 
             <!-- Recents List Header -->
             <div class="mt-4 pt-2 border-t border-bordercolor/40 flex items-center justify-between px-2">
-                <span class="text-xs font-semibold text-textmuted">Recents</span>
+                <span class="text-xs font-semibold text-textmuted">Recents (Saved locally)</span>
                 <button onclick="clearAllChats()" title="Clear All History" class="text-xs text-textmuted hover:text-red-400">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
@@ -165,9 +189,9 @@
     <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-mainbg">
         
         <!-- Header TopBar -->
-        <header class="h-14 flex items-center justify-between px-4 border-b border-bordercolor/30 bg-mainbg/80 backdrop-blur">
+        <header class="h-14 flex items-center justify-between px-4 border-b border-bordercolor/30 bg-mainbg/80 backdrop-blur z-10">
             <div class="flex items-center gap-2">
-                <button onclick="toggleSidebar()" class="p-2 text-textmuted hover:text-white hover:bg-hoverbg rounded-lg">
+                <button onclick="toggleSidebar()" class="p-2 text-textmuted hover:text-white hover:bg-hoverbg rounded-lg" title="Toggle Sidebar">
                     <i class="fa-solid fa-bars-staggered"></i>
                 </button>
                 <div onclick="openSettingsModal()" class="flex items-center gap-1.5 cursor-pointer hover:bg-hoverbg px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors">
@@ -199,17 +223,17 @@
                 
                 <!-- Quick Action Buttons -->
                 <div class="w-full max-w-xl flex flex-col gap-2.5 text-left text-sm text-gray-200">
-                    <button onclick="quickPrompt('Create an image or sticker concept')" class="flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
+                    <button onclick="quickPrompt('Create an image or sticker concept')" class="clickable-card flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
                         <i class="fa-regular fa-image text-emerald-400 text-base"></i>
-                        <span>Create an image or sticker</span>
+                        <span>Create an image or sticker concept</span>
                     </button>
-                    <button onclick="quickPrompt('Write a Python script for automated network port scanning')" class="flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
+                    <button onclick="quickPrompt('Write a Python script for automated network port scanning')" class="clickable-card flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
                         <i class="fa-regular fa-pen-to-square text-emerald-400 text-base"></i>
-                        <span>Write or edit</span>
+                        <span>Write or edit code</span>
                     </button>
-                    <button onclick="quickPrompt('Explain cybersecurity penetration testing methodology for Linux')" class="flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
+                    <button onclick="quickPrompt('Explain cybersecurity penetration testing methodology for Linux')" class="clickable-card flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
                         <i class="fa-solid fa-globe text-emerald-400 text-base"></i>
-                        <span>Search the web</span>
+                        <span>Search the web or explain security concepts</span>
                     </button>
                 </div>
             </div>
@@ -223,16 +247,23 @@
         <!-- Input Area Section -->
         <div class="p-4 bg-mainbg border-t border-bordercolor/20">
             <div class="max-w-3xl mx-auto relative">
+                
                 <div class="bg-inputbg rounded-3xl border border-bordercolor p-3 shadow-2xl flex flex-col gap-2 focus-within:border-emerald-500/60 transition-colors">
-                    <textarea id="user-input" rows="1" placeholder="Ask BNBprivate..." class="w-full bg-transparent text-gray-100 placeholder-textmuted resize-none focus:outline-none px-2 py-1 text-base max-h-36" onkeydown="handleKeyPress(event)" oninput="autoResizeTextarea(this)"></textarea>
+                    
+                    <!-- File Previews Container (ChatGPT/Gemini Style Thumbnail Attachments) -->
+                    <div id="attachment-preview-container" class="hidden flex flex-wrap gap-2 px-2 pt-1 pb-2 border-b border-bordercolor/40">
+                        <!-- Preview thumbnails injected here -->
+                    </div>
+
+                    <textarea id="user-input" rows="1" placeholder="Ask BNBprivate... (Drop or Paste images/files Ctrl+V)" class="w-full bg-transparent text-gray-100 placeholder-textmuted resize-none focus:outline-none px-2 py-1 text-base max-h-36" onkeydown="handleKeyPress(event)" oninput="autoResizeTextarea(this)"></textarea>
                     
                     <div class="flex items-center justify-between pt-1">
                         <!-- Left Action Icons -->
                         <div class="flex items-center gap-2">
-                            <button onclick="triggerFileUpload()" class="p-2 text-textmuted hover:text-white rounded-full hover:bg-hoverbg transition-colors" title="Attach file">
-                                <i class="fa-solid fa-plus"></i>
+                            <button onclick="triggerFileUpload()" class="p-2 text-textmuted hover:text-white rounded-full hover:bg-hoverbg transition-colors" title="Attach image or file">
+                                <i class="fa-solid fa-plus text-lg"></i>
                             </button>
-                            <input type="file" id="file-input" class="hidden" onchange="handleFileSelected(event)">
+                            <input type="file" id="file-input" class="hidden" multiple onchange="handleFileSelected(event)">
                         </div>
 
                         <!-- Right Action Icons & Send Button -->
@@ -241,7 +272,7 @@
                                 <i id="think-icon" class="fa-solid fa-brain text-textmuted"></i>
                                 <span>Think</span>
                             </button>
-                            <button onclick="toggleVoiceInput()" class="p-2 text-textmuted hover:text-white rounded-full hover:bg-hoverbg transition-colors" title="Voice Input">
+                            <button id="voice-btn" onclick="toggleVoiceInput()" class="p-2 text-textmuted hover:text-white rounded-full hover:bg-hoverbg transition-colors" title="Voice Input">
                                 <i class="fa-solid fa-microphone"></i>
                             </button>
                             <button id="send-btn" onclick="sendMessage()" class="p-2.5 bg-white text-black rounded-full hover:bg-emerald-400 transition-colors flex items-center justify-center font-bold">
@@ -250,7 +281,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="text-xs text-textmuted text-center mt-2">BNBprivate AI Assistant • Private & Uncensored Environment</p>
+                <p class="text-xs text-textmuted text-center mt-2">BNBprivate AI Assistant • Persistent History & Local File Support</p>
             </div>
         </div>
     </main>
@@ -281,12 +312,12 @@
 
                 <div>
                     <label class="block text-textmuted text-xs font-semibold mb-1">API Key (Optional)</label>
-                    <input type="password" id="api-key-input" placeholder="Optional for custom OpenAI reverse proxies" class="w-full bg-inputbg border border-bordercolor rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                    <input type="password" id="api-key-input" placeholder="Optional for custom reverse proxies" class="w-full bg-inputbg border border-bordercolor rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
                 </div>
 
                 <div class="p-3 bg-mainbg rounded-xl border border-bordercolor/60 text-xs text-gray-300">
-                    <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-lightbulb"></i> How to connect Colab GPU:</p>
-                    <p class="leading-relaxed">1. Run Ollama & ngrok in Google Colab.<br>2. Copy the public ngrok URL.<br>3. Paste it here to run <strong>dolphin-llama3:8b</strong> without loading your laptop!</p>
+                    <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-lightbulb"></i> Google Colab GPU Setup:</p>
+                    <p class="leading-relaxed">1. Run Ollama in Google Colab.<br>2. Expose port using <strong>ngrok</strong> or <strong>localtunnel</strong>.<br>3. Paste the URL here to talk to <strong>dolphin-llama3:8b</strong>!</p>
                 </div>
             </div>
 
@@ -301,7 +332,7 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+    <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
         Notification
     </div>
 
@@ -314,6 +345,13 @@
         let modelName = localStorage.getItem('bnbprivate_model_name') || 'dolphin-llama3:8b';
         let apiKey = localStorage.getItem('bnbprivate_api_key') || '';
         let isThinkMode = false;
+        
+        // Attached files array for current pending message
+        let currentAttachments = []; 
+
+        // Voice recognition variable
+        let speechRecognition = null;
+        let isRecording = false;
 
         // On DOM Loaded
         document.addEventListener('DOMContentLoaded', () => {
@@ -323,6 +361,7 @@
             document.getElementById('active-model-display').innerText = modelName;
             
             renderHistory();
+            setupClipboardPaste();
 
             // Configure Marked Markdown parser
             if (typeof marked !== 'undefined') {
@@ -337,12 +376,17 @@
             }
         });
 
-        // UI Toggle Helpers
+        // Toggle Sidebar Functionality (Desktop Collapse & Mobile Drawer)
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
+            
+            if (window.innerWidth < 768) {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            } else {
+                sidebar.classList.toggle('collapsed-sidebar');
+            }
         }
 
         function openSettingsModal() {
@@ -377,7 +421,7 @@
 
         function autoResizeTextarea(textarea) {
             textarea.style.height = 'auto';
-            textarea.style.height = (textarea.scrollHeight) + 'px';
+            textarea.style.height = Math.min(textarea.scrollHeight, 140) + 'px';
         }
 
         function saveSettings() {
@@ -395,9 +439,154 @@
             showToast("Settings Saved Successfully");
         }
 
-        // Chat History Management
+        // --- File Attachment & Clipboard Paste Handling ---
+        function triggerFileUpload() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileSelected(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(processFile);
+            e.target.value = ''; // Reset input
+        }
+
+        function setupClipboardPaste() {
+            document.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let item of items) {
+                    if (item.kind === 'file') {
+                        const blob = item.getAsFile();
+                        if (blob) {
+                            processFile(blob);
+                        }
+                    }
+                }
+            });
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileData = {
+                    id: Date.now() + Math.random().toString(36).substring(2, 6),
+                    name: file.name || 'Pasted Image',
+                    type: file.type,
+                    dataUrl: e.target.result
+                };
+                currentAttachments.push(fileData);
+                renderAttachmentPreviews();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderAttachmentPreviews() {
+            const container = document.getElementById('attachment-preview-container');
+            container.innerHTML = '';
+            
+            if (currentAttachments.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            currentAttachments.forEach((att, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'relative group rounded-xl overflow-hidden bg-hoverbg border border-bordercolor flex items-center p-1.5 gap-2 max-w-xs';
+                
+                if (att.type.startsWith('image/')) {
+                    itemDiv.innerHTML = `
+                        <img src="${att.dataUrl}" class="w-10 h-10 object-cover rounded-lg">
+                        <div class="flex flex-col text-xs pr-4 overflow-hidden">
+                            <span class="truncate font-medium text-gray-200">${escapeHtml(att.name)}</span>
+                            <span class="text-emerald-400 font-mono">Image</span>
+                        </div>
+                    `;
+                } else {
+                    itemDiv.innerHTML = `
+                        <div class="w-10 h-10 rounded-lg bg-emerald-950 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
+                            <i class="fa-solid fa-file"></i>
+                        </div>
+                        <div class="flex flex-col text-xs pr-4 overflow-hidden">
+                            <span class="truncate font-medium text-gray-200">${escapeHtml(att.name)}</span>
+                            <span class="text-textmuted">Document</span>
+                        </div>
+                    `;
+                }
+
+                // Delete attachment button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'absolute top-1 right-1 w-5 h-5 bg-black/70 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-colors';
+                removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    currentAttachments.splice(index, 1);
+                    renderAttachmentPreviews();
+                };
+
+                itemDiv.appendChild(removeBtn);
+                container.appendChild(itemDiv);
+            });
+        }
+
+        // --- Voice Recognition Feature ---
+        function toggleVoiceInput() {
+            const voiceBtn = document.getElementById('voice-btn');
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showToast("Voice input not supported in this browser");
+                return;
+            }
+
+            if (isRecording) {
+                if (speechRecognition) speechRecognition.stop();
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            speechRecognition = new SpeechRecognition();
+            speechRecognition.continuous = false;
+            speechRecognition.interimResults = true;
+            speechRecognition.lang = 'en-US';
+
+            speechRecognition.onstart = function() {
+                isRecording = true;
+                voiceBtn.classList.add('recording-pulse');
+                showToast("Listening... Speak now");
+            };
+
+            speechRecognition.onresult = function(event) {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    transcript += event.results[i][0].transcript;
+                }
+                const input = document.getElementById('user-input');
+                input.value = transcript;
+                autoResizeTextarea(input);
+            };
+
+            speechRecognition.onerror = function(event) {
+                showToast("Voice Recognition Error: " + event.error);
+                stopRecordingUI();
+            };
+
+            speechRecognition.onend = function() {
+                stopRecordingUI();
+            };
+
+            speechRecognition.start();
+        }
+
+        function stopRecordingUI() {
+            isRecording = false;
+            const voiceBtn = document.getElementById('voice-btn');
+            voiceBtn.classList.remove('recording-pulse');
+        }
+
+        // --- Chat History Management (Saved in LocalStorage) ---
         function createNewChat() {
             currentChatId = null;
+            currentAttachments = [];
+            renderAttachmentPreviews();
             document.getElementById('messages-list').classList.add('hidden');
             document.getElementById('hero-screen').classList.remove('hidden');
             document.getElementById('messages-list').innerHTML = '';
@@ -411,7 +600,7 @@
             listContainer.innerHTML = '';
 
             if (chats.length === 0) {
-                listContainer.innerHTML = '<span class="text-xs text-textmuted px-2 py-1 italic">No chats yet</span>';
+                listContainer.innerHTML = '<span class="text-xs text-textmuted px-2 py-1 italic">No saved chats</span>';
                 return;
             }
 
@@ -419,11 +608,12 @@
                 const isActive = chat.id === currentChatId;
                 const btn = document.createElement('div');
                 btn.className = 'flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer group ' + (isActive ? 'bg-hoverbg text-white font-medium' : 'text-gray-300 hover:bg-hoverbg/60');
-                btn.innerHTML = '' +
-                    '<span class="truncate flex-1 pr-2">' + escapeHtml(chat.title) + '</span>' +
-                    '<button onclick="deleteChat(event, \'' + chat.id + '\')" title="Delete chat" class="opacity-0 group-hover:opacity-100 text-textmuted hover:text-red-400 p-1 transition-opacity">' +
-                        '<i class="fa-solid fa-trash-can text-xs"></i>' +
-                    '</button>';
+                btn.innerHTML = `
+                    <span class="truncate flex-1 pr-2">${escapeHtml(chat.title)}</span>
+                    <button onclick="deleteChat(event, '${chat.id}')" title="Delete chat" class="opacity-0 group-hover:opacity-100 text-textmuted hover:text-red-400 p-1 transition-opacity">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
                 btn.onclick = (e) => {
                     if (!e.target.closest('button')) loadChat(chat.id);
                 };
@@ -433,23 +623,19 @@
 
         function deleteChat(e, id) {
             e.stopPropagation();
-            if (confirm("Delete this chat thread?")) {
-                chats = chats.filter(c => c.id !== id);
-                localStorage.setItem('bnbprivate_chats', JSON.stringify(chats));
-                if (currentChatId === id) createNewChat();
-                else renderHistory();
-                showToast("Chat Deleted");
-            }
+            chats = chats.filter(c => c.id !== id);
+            localStorage.setItem('bnbprivate_chats', JSON.stringify(chats));
+            if (currentChatId === id) createNewChat();
+            else renderHistory();
+            showToast("Chat Deleted");
         }
 
         function clearAllChats() {
-            if (confirm("Are you sure you want to clear all chat history?")) {
-                chats = [];
-                localStorage.removeItem('bnbprivate_chats');
-                createNewChat();
-                closeSettingsModal();
-                showToast("All History Cleared");
-            }
+            chats = [];
+            localStorage.removeItem('bnbprivate_chats');
+            createNewChat();
+            closeSettingsModal();
+            showToast("All History Cleared");
         }
 
         function loadChat(id) {
@@ -463,7 +649,7 @@
             list.innerHTML = '';
 
             chat.messages.forEach(msg => {
-                appendMessageUI(msg.role, msg.content);
+                appendMessageUI(msg.role, msg.content, msg.attachments || []);
             });
 
             renderHistory();
@@ -482,51 +668,25 @@
             }
         }
 
-        function triggerFileUpload() {
-            document.getElementById('file-input').click();
-        }
-
-        function handleFileSelected(e) {
-            const file = e.target.files[0];
-            if (file) {
-                showToast('Attached: ' + file.name);
-                const input = document.getElementById('user-input');
-                input.value += ' [Attached File: ' + file.name + '] ';
-                autoResizeTextarea(input);
-            }
-        }
-
-        function toggleVoiceInput() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                showToast("Voice input not supported in browser");
-                return;
-            }
-            showToast("Listening... Speak now");
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.onresult = function(event) {
-                const text = event.results[0][0].transcript;
-                document.getElementById('user-input').value += text;
-                autoResizeTextarea(document.getElementById('user-input'));
-            };
-            recognition.start();
-        }
-
-        // Send & Process Message
+        // --- Send & Process Message ---
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const prompt = input.value.trim();
-            if (!prompt) return;
+            
+            if (!prompt && currentAttachments.length === 0) return;
 
             input.value = '';
             input.style.height = 'auto';
+
+            const attachmentsToSend = [...currentAttachments];
+            currentAttachments = [];
+            renderAttachmentPreviews();
 
             if (!currentChatId) {
                 currentChatId = Date.now().toString();
                 chats.unshift({
                     id: currentChatId,
-                    title: prompt.substring(0, 32),
+                    title: prompt ? prompt.substring(0, 32) : 'Image/File Prompt',
                     messages: []
                 });
             }
@@ -538,8 +698,12 @@
             list.classList.remove('hidden');
 
             // Append User Message
-            currentChat.messages.push({ role: 'user', content: prompt });
-            appendMessageUI('user', prompt);
+            currentChat.messages.push({ 
+                role: 'user', 
+                content: prompt, 
+                attachments: attachmentsToSend 
+            });
+            appendMessageUI('user', prompt, attachmentsToSend);
             localStorage.setItem('bnbprivate_chats', JSON.stringify(chats));
             renderHistory();
 
@@ -570,9 +734,9 @@
                     const data = await response.json();
                     aiResponse = data.response || data.content || "No response received.";
                 } else {
-                    // Simulated fallback response when no API is configured
-                    await new Promise(r => setTimeout(r, 1200));
-                    aiResponse = "### Welcome to **BNBprivate AI**!\n\nTo connect real Uncensored AI model (`" + modelName + "`), click **\"Connect API / Colab\"** at the top right and paste your Google Colab `ngrok` or `localtunnel` URL.\n\n```python\n# Example code generated by BNBprivate\ndef bnb_private_status():\n    return \"Ready for Uncensored AI processing!\"\n\nprint(bnb_private_status())\n```\n\n**Your prompt received:** \"" + prompt + "\"";
+                    // Simulated fallback response when no Colab API is configured
+                    await new Promise(r => setTimeout(r, 1000));
+                    aiResponse = `### **BNBprivate AI Status**\n\nYour message was received! To connect to your real **${modelName}** GPU backend, click **"Connect API / Colab"** top-right and paste your ngrok URL.\n\n\`\`\`python\n# BNBprivate Local Assistant Output\ndef get_status():\n    return "System ready & attachments processed successfully!"\n\nprint(get_status())\n\`\`\`\n\n**Your prompt:** "${prompt || 'Attached Files'}"`;
                 }
 
                 removeLoadingUI(loadingId);
@@ -589,39 +753,55 @@
             }
         }
 
-        function appendMessageUI(role, content) {
+        function appendMessageUI(role, content, attachments = []) {
             const list = document.getElementById('messages-list');
             const msgDiv = document.createElement('div');
             msgDiv.className = 'flex gap-4 ' + (role === 'user' ? 'justify-end' : 'justify-start');
 
             if (role === 'user') {
-                msgDiv.innerHTML = '' +
-                    '<div class="bg-hoverbg text-gray-100 px-4 py-2.5 rounded-2xl max-w-xl text-sm leading-relaxed border border-bordercolor/50 shadow">' +
-                        escapeHtml(content) +
-                    '</div>';
+                let attachmentsHtml = '';
+                if (attachments && attachments.length > 0) {
+                    attachmentsHtml = '<div class="flex flex-wrap gap-2 mb-2">';
+                    attachments.forEach(att => {
+                        if (att.type.startsWith('image/')) {
+                            attachmentsHtml += `<img src="${att.dataUrl}" class="max-w-xs max-h-48 rounded-xl border border-bordercolor object-cover">`;
+                        } else {
+                            attachmentsHtml += `<div class="p-2 bg-mainbg rounded-lg border border-bordercolor text-xs flex items-center gap-2"><i class="fa-solid fa-file text-emerald-400"></i> <span>${escapeHtml(att.name)}</span></div>`;
+                        }
+                    });
+                    attachmentsHtml += '</div>';
+                }
+
+                msgDiv.innerHTML = `
+                    <div class="bg-hoverbg text-gray-100 px-4 py-2.5 rounded-2xl max-w-xl text-sm leading-relaxed border border-bordercolor/50 shadow">
+                        ${attachmentsHtml}
+                        ${content ? escapeHtml(content) : ''}
+                    </div>
+                `;
             } else {
                 const parsedContent = typeof marked !== 'undefined' ? marked.parse(content) : content;
                 const msgId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 4);
 
-                msgDiv.innerHTML = '' +
-                    '<div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black flex items-center justify-center text-xs shrink-0 mt-1 shadow">' +
-                        'BNB' +
-                    '</div>' +
-                    '<div class="flex-1 max-w-2xl overflow-hidden">' +
-                        '<div id="' + msgId + '" class="markdown-content text-gray-200 text-sm leading-relaxed">' +
-                            parsedContent +
-                        '</div>' +
-                        '<div class="flex items-center gap-3 mt-3 text-xs text-textmuted">' +
-                            '<button onclick="copyMessageText(\'' + msgId + '\')" class="hover:text-white flex items-center gap-1 transition-colors">' +
-                                '<i class="fa-regular fa-copy"></i> Copy' +
-                            '</button>' +
-                            '<button onclick="regenerateLastMessage()" class="hover:text-white flex items-center gap-1 transition-colors">' +
-                                '<i class="fa-solid fa-rotate-right"></i> Regenerate' +
-                            '</button>' +
-                            '<button onclick="showToast(\'Feedback recorded\')" class="hover:text-white"><i class="fa-regular fa-thumbs-up"></i></button>' +
-                            '<button onclick="showToast(\'Feedback recorded\')" class="hover:text-white"><i class="fa-regular fa-thumbs-down"></i></button>' +
-                        '</div>' +
-                    '</div>';
+                msgDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black flex items-center justify-center text-xs shrink-0 mt-1 shadow">
+                        BNB
+                    </div>
+                    <div class="flex-1 max-w-2xl overflow-hidden">
+                        <div id="${msgId}" class="markdown-content text-gray-200 text-sm leading-relaxed">
+                            ${parsedContent}
+                        </div>
+                        <div class="flex items-center gap-3 mt-3 text-xs text-textmuted">
+                            <button onclick="copyMessageText('${msgId}')" class="hover:text-white flex items-center gap-1 transition-colors">
+                                <i class="fa-regular fa-copy"></i> Copy
+                            </button>
+                            <button onclick="regenerateLastMessage()" class="hover:text-white flex items-center gap-1 transition-colors">
+                                <i class="fa-solid fa-rotate-right"></i> Regenerate
+                            </button>
+                            <button onclick="showToast('Feedback recorded')" class="hover:text-white"><i class="fa-regular fa-thumbs-up"></i></button>
+                            <button onclick="showToast('Feedback recorded')" class="hover:text-white"><i class="fa-regular fa-thumbs-down"></i></button>
+                        </div>
+                    </div>
+                `;
             }
 
             list.appendChild(msgDiv);
@@ -652,14 +832,15 @@
             const msgDiv = document.createElement('div');
             msgDiv.id = id;
             msgDiv.className = "flex gap-4 justify-start items-center";
-            msgDiv.innerHTML = '' +
-                '<div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black flex items-center justify-center text-xs shrink-0 shadow">' +
-                    'BNB' +
-                '</div>' +
-                '<div class="flex items-center gap-2 text-textmuted text-sm bg-sidebarbg px-3 py-2 rounded-xl border border-bordercolor/40">' +
-                    '<i class="fa-solid fa-circle-notch fa-spin text-emerald-400"></i>' +
-                    '<span>BNBprivate is thinking...</span>' +
-                '</div>';
+            msgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black flex items-center justify-center text-xs shrink-0 shadow">
+                    BNB
+                </div>
+                <div class="flex items-center gap-2 text-textmuted text-sm bg-sidebarbg px-3 py-2 rounded-xl border border-bordercolor/40">
+                    <i class="fa-solid fa-circle-notch fa-spin text-emerald-400"></i>
+                    <span>BNBprivate is thinking...</span>
+                </div>
+            `;
             list.appendChild(msgDiv);
             document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
             return id;
@@ -694,6 +875,7 @@
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
     </script>
