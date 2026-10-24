@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BNBprivate - AI Assistant</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        chatbg: '#171717',
+                        mainbg: '#212121',
+                        sidebarbg: '#171717',
+                        hoverbg: '#2f2f2f',
+                        inputbg: '#2f2f2f',
+                        bordercolor: '#383838',
+                        textmuted: '#b4b4b4',
+                        accent: '#10a37f'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome & Code Highlighting Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #424242; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        .markdown-content p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .markdown-content p:last-child { margin-bottom: 0; }
+        .markdown-content pre { 
+            background-color: #0d0d0d; 
+            border-radius: 0.5rem; 
+            padding: 1rem; 
+            margin-top: 0.5rem; 
+            margin-bottom: 0.75rem; 
+            overflow-x: auto;
+            position: relative;
+            border: 1px solid #383838;
+        }
+        .markdown-content code { font-family: 'Fira Code', monospace; font-size: 0.875em; }
+        .markdown-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .markdown-content ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        
+        /* Pulse Animation for Streaming Indicator */
+        @keyframes blink {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+        .animate-blink { animation: blink 1.4s infinite; }
+    </style>
+</head>
+<body class="bg-mainbg text-gray-100 font-sans h-full flex overflow-hidden">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Left Sidebar -->
+    <aside id="sidebar" class="w-64 bg-sidebarbg h-full flex flex-col justify-between p-3 border-r border-bordercolor/40 z-30 fixed md:static transition-transform duration-300 -translate-x-full md:translate-x-0">
+        
+        <!-- Top Section -->
+        <div class="flex flex-col gap-2 overflow-y-auto flex-1">
+            <!-- Sidebar Header -->
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex items-center gap-2 text-lg font-bold tracking-tight text-white cursor-pointer hover:bg-hoverbg p-1.5 rounded-lg transition-colors" onclick="createNewChat()">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-xs font-black">BNB</div>
+                    <span>BNBprivate</span>
+                </div>
+                <div class="flex items-center gap-1 text-textmuted">
+                    <button onclick="openSettingsModal()" title="Settings & Colab URL" class="p-2 hover:text-white hover:bg-hoverbg rounded-lg transition-colors">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <button onclick="toggleSidebar()" class="p-2 md:hidden hover:text-white hover:bg-hoverbg rounded-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- New Chat Button -->
+            <button onclick="createNewChat()" class="flex items-center justify-between w-full p-2.5 rounded-lg border border-bordercolor hover:bg-hoverbg text-sm font-medium transition-colors text-left bg-hoverbg/40">
+                <div class="flex items-center gap-3">
+                    <i class="fa-regular fa-pen-to-square"></i>
+                    <span>New chat</span>
+                </div>
+                <span class="text-xs text-textmuted">⌘K</span>
+            </button>
+
+            <!-- Navigation List -->
+            <nav class="flex flex-col gap-0.5 mt-2 text-sm text-gray-300">
+                <button onclick="showToast('Images feature available when connected to image models!')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
+                    <i class="fa-regular fa-image w-4 text-center"></i>
+                    <span>Images</span>
+                </button>
+                <button onclick="showToast('Scheduled prompts active')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
+                    <i class="fa-regular fa-clock w-4 text-center"></i>
+                    <span>Scheduled</span>
+                </button>
+                <button onclick="showToast('Library contains saved templates')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
+                    <i class="fa-solid fa-book-bookmark w-4 text-center"></i>
+                    <span>Library</span>
+                </button>
+                <button onclick="showToast('Plugins manager ready')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
+                    <i class="fa-solid fa-puzzle-piece w-4 text-center"></i>
+                    <span>Plugins</span>
+                </button>
+                <button onclick="showToast('Codex mode ready for programming')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
+                    <i class="fa-solid fa-terminal w-4 text-center"></i>
+                    <span>Codex</span>
+                </button>
+                <button onclick="showToast('Exploring BNBprivate models')" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-hoverbg transition-colors text-left">
+                    <i class="fa-solid fa-compass w-4 text-center"></i>
+                    <span>Explore</span>
+                </button>
+            </nav>
+
+            <!-- Recents List Header -->
+            <div class="mt-4 pt-2 border-t border-bordercolor/40 flex items-center justify-between px-2">
+                <span class="text-xs font-semibold text-textmuted">Recents</span>
+                <button onclick="clearAllChats()" title="Clear All History" class="text-xs text-textmuted hover:text-red-400">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+
+            <!-- Recents Chat Threads List -->
+            <div id="chat-history-list" class="flex flex-col gap-1 mt-1 overflow-y-auto max-h-64 pr-1">
+                <!-- Dynamic chat history injected here -->
+            </div>
+        </div>
+
+        <!-- Bottom User Profile Section -->
+        <div class="pt-2 border-t border-bordercolor/40">
+            <div onclick="openSettingsModal()" class="flex items-center justify-between p-2 rounded-lg hover:bg-hoverbg cursor-pointer transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center text-xs tracking-wider shadow">
+                        BNB
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold leading-tight text-white">BD NAYEM BOSS</span>
+                        <span class="text-xs text-emerald-400 font-medium">BNBprivate Pro</span>
+                    </div>
+                </div>
+                <i class="fa-solid fa-ellipsis text-textmuted text-sm"></i>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-mainbg">
+        
+        <!-- Header TopBar -->
+        <header class="h-14 flex items-center justify-between px-4 border-b border-bordercolor/30 bg-mainbg/80 backdrop-blur">
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSidebar()" class="p-2 text-textmuted hover:text-white hover:bg-hoverbg rounded-lg">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+                <div onclick="openSettingsModal()" class="flex items-center gap-1.5 cursor-pointer hover:bg-hoverbg px-2.5 py-1.5 rounded-lg text-sm font-semibold transition-colors">
+                    <span class="text-emerald-400 font-bold">BNBprivate</span>
+                    <span class="text-textmuted">•</span>
+                    <span id="active-model-display" class="text-gray-300">dolphin-llama3:8b</span>
+                    <i class="fa-solid fa-chevron-down text-xs text-textmuted ml-1"></i>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="openSettingsModal()" class="flex items-center gap-2 px-3 py-1.5 bg-hoverbg hover:bg-gray-700 text-xs font-medium rounded-lg border border-bordercolor transition-colors text-white">
+                    <i class="fa-solid fa-plug text-emerald-400"></i>
+                    <span class="hidden sm:inline">Connect API / Colab</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Scroll Area -->
+        <div id="chat-container" class="flex-1 overflow-y-auto px-4 py-6 md:px-0">
+            
+            <!-- Hero Welcome Screen (Shown when no active chat) -->
+            <div id="hero-screen" class="max-w-2xl mx-auto h-full flex flex-col items-center justify-center text-center px-4">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-2xl font-black mb-4 shadow-lg shadow-emerald-900/20">
+                    BNB
+                </div>
+                <h1 class="text-3xl font-bold mb-2 tracking-tight text-gray-100">What's on the agenda today?</h1>
+                <p class="text-sm text-textmuted mb-8">Powered by <span class="text-emerald-400 font-semibold">BNBprivate</span> • Uncensored Local & Cloud AI</p>
+                
+                <!-- Quick Action Buttons -->
+                <div class="w-full max-w-xl flex flex-col gap-2.5 text-left text-sm text-gray-200">
+                    <button onclick="quickPrompt('Create an image or sticker concept')" class="flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
+                        <i class="fa-regular fa-image text-emerald-400 text-base"></i>
+                        <span>Create an image or sticker</span>
+                    </button>
+                    <button onclick="quickPrompt('Write a Python script for automated network port scanning')" class="flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
+                        <i class="fa-regular fa-pen-to-square text-emerald-400 text-base"></i>
+                        <span>Write or edit</span>
+                    </button>
+                    <button onclick="quickPrompt('Explain cybersecurity penetration testing methodology for Linux')" class="flex items-center gap-3 p-3 bg-sidebarbg hover:bg-hoverbg rounded-xl border border-bordercolor/60 transition-all hover:border-emerald-500/50">
+                        <i class="fa-solid fa-globe text-emerald-400 text-base"></i>
+                        <span>Search the web</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Stream Area -->
+            <div id="messages-list" class="max-w-3xl mx-auto space-y-6 hidden pb-12">
+                <!-- Messages dynamic injection -->
+            </div>
+        </div>
+
+        <!-- Input Area Section -->
+        <div class="p-4 bg-mainbg border-t border-bordercolor/20">
+            <div class="max-w-3xl mx-auto relative">
+                <div class="bg-inputbg rounded-3xl border border-bordercolor p-3 shadow-2xl flex flex-col gap-2 focus-within:border-emerald-500/60 transition-colors">
+                    <textarea id="user-input" rows="1" placeholder="Ask BNBprivate..." class="w-full bg-transparent text-gray-100 placeholder-textmuted resize-none focus:outline-none px-2 py-1 text-base max-h-36" onkeydown="handleKeyPress(event)" oninput="autoResizeTextarea(this)"></textarea>
+                    
+                    <div class="flex items-center justify-between pt-1">
+                        <!-- Left Action Icons -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="triggerFileUpload()" class="p-2 text-textmuted hover:text-white rounded-full hover:bg-hoverbg transition-colors" title="Attach file">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                            <input type="file" id="file-input" class="hidden" onchange="handleFileSelected(event)">
+                        </div>
+
+                        <!-- Right Action Icons & Send Button -->
+                        <div class="flex items-center gap-2">
+                            <button id="think-toggle-btn" onclick="toggleThinkMode()" class="flex items-center gap-1.5 px-3 py-1.5 bg-hoverbg hover:bg-gray-700 text-xs text-gray-300 rounded-full border border-bordercolor transition-colors" title="Deep Thought Mode">
+                                <i id="think-icon" class="fa-solid fa-brain text-textmuted"></i>
+                                <span>Think</span>
+                            </button>
+                            <button onclick="toggleVoiceInput()" class="p-2 text-textmuted hover:text-white rounded-full hover:bg-hoverbg transition-colors" title="Voice Input">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                            <button id="send-btn" onclick="sendMessage()" class="p-2.5 bg-white text-black rounded-full hover:bg-emerald-400 transition-colors flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-arrow-up text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-textmuted text-center mt-2">BNBprivate AI Assistant • Private & Uncensored Environment</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden p-4 backdrop-blur-sm">
+        <div class="bg-sidebarbg border border-bordercolor w-full max-w-md rounded-2xl p-6 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-bordercolor pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded bg-emerald-600 text-white font-bold flex items-center justify-center text-xs">BNB</div>
+                    <h3 class="text-lg font-bold text-white">BNBprivate Settings</h3>
+                </div>
+                <button onclick="closeSettingsModal()" class="text-textmuted hover:text-white p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-3 text-sm">
+                <div>
+                    <label class="block text-textmuted text-xs font-semibold mb-1">API Endpoint URL (Google Colab / Localhost)</label>
+                    <input type="text" id="api-url-input" placeholder="e.g. https://xxxx.ngrok-free.app or http://localhost:11434" class="w-full bg-inputbg border border-bordercolor rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-textmuted text-xs font-semibold mb-1">Model Name</label>
+                    <input type="text" id="model-name-input" value="dolphin-llama3:8b" class="w-full bg-inputbg border border-bordercolor rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-textmuted text-xs font-semibold mb-1">API Key (Optional)</label>
+                    <input type="password" id="api-key-input" placeholder="Optional for custom OpenAI reverse proxies" class="w-full bg-inputbg border border-bordercolor rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="p-3 bg-mainbg rounded-xl border border-bordercolor/60 text-xs text-gray-300">
+                    <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-lightbulb"></i> How to connect Colab GPU:</p>
+                    <p class="leading-relaxed">1. Run Ollama & ngrok in Google Colab.<br>2. Copy the public ngrok URL.<br>3. Paste it here to run <strong>dolphin-llama3:8b</strong> without loading your laptop!</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-bordercolor">
+                <button onclick="clearAllChats()" class="text-xs text-red-400 hover:text-red-300 font-medium">Clear All History</button>
+                <div class="flex gap-2">
+                    <button onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl bg-hoverbg hover:bg-gray-700 text-xs font-medium text-gray-300">Cancel</button>
+                    <button onclick="saveSettings()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+        Notification
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // Application State Management
+        let chats = JSON.parse(localStorage.getItem('bnbprivate_chats') || '[]');
+        let currentChatId = null;
+        let apiUrl = localStorage.getItem('bnbprivate_api_url') || '';
+        let modelName = localStorage.getItem('bnbprivate_model_name') || 'dolphin-llama3:8b';
+        let apiKey = localStorage.getItem('bnbprivate_api_key') || '';
+        let isThinkMode = false;
+
+        // On DOM Loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('api-url-input').value = apiUrl;
+            document.getElementById('model-name-input').value = modelName;
+            document.getElementById('api-key-input').value = apiKey;
+            document.getElementById('active-model-display').innerText = modelName;
+            
+            renderHistory();
+
+            // Configure Marked Markdown parser
+            if (typeof marked !== 'undefined') {
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        if (lang && hljs.getLanguage(lang)) {
+                            return hljs.highlight(code, { language: lang }).value;
+                        }
+                        return hljs.highlightAuto(code).value;
+                    }
+                });
+            }
+        });
+
+        // UI Toggle Helpers
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 2500);
+        }
+
+        function toggleThinkMode() {
+            isThinkMode = !isThinkMode;
+            const btn = document.getElementById('think-toggle-btn');
+            const icon = document.getElementById('think-icon');
+            if (isThinkMode) {
+                btn.classList.add('bg-emerald-600/30', 'border-emerald-500', 'text-emerald-400');
+                icon.classList.add('text-emerald-400');
+                showToast("Deep Thought Mode Enabled");
+            } else {
+                btn.classList.remove('bg-emerald-600/30', 'border-emerald-500', 'text-emerald-400');
+                icon.classList.remove('text-emerald-400');
+                showToast("Standard Mode Enabled");
+            }
+        }
+
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+
+        function saveSettings() {
+            apiUrl = document.getElementById('api-url-input').value.trim();
+            modelName = document.getElementById('model-name-input').value.trim() || 'dolphin-llama3:8b';
+            apiKey = document.getElementById('api-key-input').value.trim();
+            
+            localStorage.setItem('bnbprivate_api_url', apiUrl);
+            localStorage.setItem('bnbprivate_model_name', modelName);
+            localStorage.setItem('bnbprivate_api_key', apiKey);
+
+            document.getElementById('active-model-display').innerText = modelName;
+            
+            closeSettingsModal();
+            showToast("Settings Saved Successfully");
+        }
+
+        // Chat History Management
+        function createNewChat() {
+            currentChatId = null;
+            document.getElementById('messages-list').classList.add('hidden');
+            document.getElementById('hero-screen').classList.remove('hidden');
+            document.getElementById('messages-list').innerHTML = '';
+            document.getElementById('user-input').value = '';
+            document.getElementById('user-input').style.height = 'auto';
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const listContainer = document.getElementById('chat-history-list');
+            listContainer.innerHTML = '';
+
+            if (chats.length === 0) {
+                listContainer.innerHTML = '<span class="text-xs text-textmuted px-2 py-1 italic">No chats yet</span>';
+                return;
+            }
+
+            chats.forEach(chat => {
+                const isActive = chat.id === currentChatId;
+                const btn = document.createElement('div');
+                btn.className = 'flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer group ' + (isActive ? 'bg-hoverbg text-white font-medium' : 'text-gray-300 hover:bg-hoverbg/60');
+                btn.innerHTML = '' +
+                    '<span class="truncate flex-1 pr-2">' + escapeHtml(chat.title) + '</span>' +
+                    '<button onclick="deleteChat(event, \'' + chat.id + '\')" title="Delete chat" class="opacity-0 group-hover:opacity-100 text-textmuted hover:text-red-400 p-1 transition-opacity">' +
+                        '<i class="fa-solid fa-trash-can text-xs"></i>' +
+                    '</button>';
+                btn.onclick = (e) => {
+                    if (!e.target.closest('button')) loadChat(chat.id);
+                };
+                listContainer.appendChild(btn);
+            });
+        }
+
+        function deleteChat(e, id) {
+            e.stopPropagation();
+            if (confirm("Delete this chat thread?")) {
+                chats = chats.filter(c => c.id !== id);
+                localStorage.setItem('bnbprivate_chats', JSON.stringify(chats));
+                if (currentChatId === id) createNewChat();
+                else renderHistory();
+                showToast("Chat Deleted");
+            }
+        }
+
+        function clearAllChats() {
+            if (confirm("Are you sure you want to clear all chat history?")) {
+                chats = [];
+                localStorage.removeItem('bnbprivate_chats');
+                createNewChat();
+                closeSettingsModal();
+                showToast("All History Cleared");
+            }
+        }
+
+        function loadChat(id) {
+            currentChatId = id;
+            const chat = chats.find(c => c.id === id);
+            if (!chat) return;
+
+            document.getElementById('hero-screen').classList.add('hidden');
+            const list = document.getElementById('messages-list');
+            list.classList.remove('hidden');
+            list.innerHTML = '';
+
+            chat.messages.forEach(msg => {
+                appendMessageUI(msg.role, msg.content);
+            });
+
+            renderHistory();
+        }
+
+        function quickPrompt(text) {
+            document.getElementById('user-input').value = text;
+            autoResizeTextarea(document.getElementById('user-input'));
+            sendMessage();
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function triggerFileUpload() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileSelected(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showToast('Attached: ' + file.name);
+                const input = document.getElementById('user-input');
+                input.value += ' [Attached File: ' + file.name + '] ';
+                autoResizeTextarea(input);
+            }
+        }
+
+        function toggleVoiceInput() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                showToast("Voice input not supported in browser");
+                return;
+            }
+            showToast("Listening... Speak now");
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                document.getElementById('user-input').value += text;
+                autoResizeTextarea(document.getElementById('user-input'));
+            };
+            recognition.start();
+        }
+
+        // Send & Process Message
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+
+            if (!currentChatId) {
+                currentChatId = Date.now().toString();
+                chats.unshift({
+                    id: currentChatId,
+                    title: prompt.substring(0, 32),
+                    messages: []
+                });
+            }
+
+            const currentChat = chats.find(c => c.id === currentChatId);
+
+            document.getElementById('hero-screen').classList.add('hidden');
+            const list = document.getElementById('messages-list');
+            list.classList.remove('hidden');
+
+            // Append User Message
+            currentChat.messages.push({ role: 'user', content: prompt });
+            appendMessageUI('user', prompt);
+            localStorage.setItem('bnbprivate_chats', JSON.stringify(chats));
+            renderHistory();
+
+            // Append AI Loading Indicator
+            const loadingId = appendLoadingUI();
+
+            try {
+                let aiResponse = "";
+
+                if (apiUrl) {
+                    const endpoint = apiUrl.endsWith('/api/generate') ? apiUrl : (apiUrl.replace(/\/$/, '') + '/api/generate');
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'ngrok-skip-browser-warning': 'true',
+                            ...(apiKey ? { 'Authorization': 'Bearer ' + apiKey } : {})
+                        },
+                        body: JSON.stringify({
+                            model: modelName,
+                            prompt: isThinkMode ? ('[Think deeply before answering]\n' + prompt) : prompt,
+                            stream: false
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("API Connection Error");
+                    const data = await response.json();
+                    aiResponse = data.response || data.content || "No response received.";
+                } else {
+                    // Simulated fallback response when no API is configured
+                    await new Promise(r => setTimeout(r, 1200));
+                    aiResponse = "### Welcome to **BNBprivate AI**!\n\nTo connect real Uncensored AI model (`" + modelName + "`), click **\"Connect API / Colab\"** at the top right and paste your Google Colab `ngrok` or `localtunnel` URL.\n\n```python\n# Example code generated by BNBprivate\ndef bnb_private_status():\n    return \"Ready for Uncensored AI processing!\"\n\nprint(bnb_private_status())\n```\n\n**Your prompt received:** \"" + prompt + "\"";
+                }
+
+                removeLoadingUI(loadingId);
+                currentChat.messages.push({ role: 'assistant', content: aiResponse });
+                appendMessageUI('assistant', aiResponse);
+                localStorage.setItem('bnbprivate_chats', JSON.stringify(chats));
+
+            } catch (err) {
+                removeLoadingUI(loadingId);
+                const errorMsg = "⚠️ **BNBprivate Connection Error:** Could not connect to API Endpoint at `" + apiUrl + "`.\n\nPlease check if your Google Colab / Ollama session is active or update your ngrok URL in **Settings**.";
+                currentChat.messages.push({ role: 'assistant', content: errorMsg });
+                appendMessageUI('assistant', errorMsg);
+                localStorage.setItem('bnbprivate_chats', JSON.stringify(chats));
+            }
+        }
+
+        function appendMessageUI(role, content) {
+            const list = document.getElementById('messages-list');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'flex gap-4 ' + (role === 'user' ? 'justify-end' : 'justify-start');
+
+            if (role === 'user') {
+                msgDiv.innerHTML = '' +
+                    '<div class="bg-hoverbg text-gray-100 px-4 py-2.5 rounded-2xl max-w-xl text-sm leading-relaxed border border-bordercolor/50 shadow">' +
+                        escapeHtml(content) +
+                    '</div>';
+            } else {
+                const parsedContent = typeof marked !== 'undefined' ? marked.parse(content) : content;
+                const msgId = 'msg-' + Date.now() + Math.random().toString(36).substr(2, 4);
+
+                msgDiv.innerHTML = '' +
+                    '<div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black flex items-center justify-center text-xs shrink-0 mt-1 shadow">' +
+                        'BNB' +
+                    '</div>' +
+                    '<div class="flex-1 max-w-2xl overflow-hidden">' +
+                        '<div id="' + msgId + '" class="markdown-content text-gray-200 text-sm leading-relaxed">' +
+                            parsedContent +
+                        '</div>' +
+                        '<div class="flex items-center gap-3 mt-3 text-xs text-textmuted">' +
+                            '<button onclick="copyMessageText(\'' + msgId + '\')" class="hover:text-white flex items-center gap-1 transition-colors">' +
+                                '<i class="fa-regular fa-copy"></i> Copy' +
+                            '</button>' +
+                            '<button onclick="regenerateLastMessage()" class="hover:text-white flex items-center gap-1 transition-colors">' +
+                                '<i class="fa-solid fa-rotate-right"></i> Regenerate' +
+                            '</button>' +
+                            '<button onclick="showToast(\'Feedback recorded\')" class="hover:text-white"><i class="fa-regular fa-thumbs-up"></i></button>' +
+                            '<button onclick="showToast(\'Feedback recorded\')" class="hover:text-white"><i class="fa-regular fa-thumbs-down"></i></button>' +
+                        '</div>' +
+                    '</div>';
+            }
+
+            list.appendChild(msgDiv);
+            
+            // Add copy buttons to code blocks
+            msgDiv.querySelectorAll('pre').forEach((pre) => {
+                if (!pre.querySelector('.copy-code-btn')) {
+                    const btn = document.createElement('button');
+                    btn.className = 'copy-code-btn absolute top-2 right-2 bg-hoverbg hover:bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs border border-bordercolor transition-colors';
+                    btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy code';
+                    btn.onclick = () => {
+                        const codeEl = pre.querySelector('code');
+                        const code = codeEl ? codeEl.innerText : pre.innerText;
+                        navigator.clipboard.writeText(code);
+                        btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
+                        setTimeout(() => { btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy code'; }, 2000);
+                    };
+                    pre.appendChild(btn);
+                }
+            });
+
+            document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+        }
+
+        function appendLoadingUI() {
+            const list = document.getElementById('messages-list');
+            const id = 'loading-' + Date.now();
+            const msgDiv = document.createElement('div');
+            msgDiv.id = id;
+            msgDiv.className = "flex gap-4 justify-start items-center";
+            msgDiv.innerHTML = '' +
+                '<div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black flex items-center justify-center text-xs shrink-0 shadow">' +
+                    'BNB' +
+                '</div>' +
+                '<div class="flex items-center gap-2 text-textmuted text-sm bg-sidebarbg px-3 py-2 rounded-xl border border-bordercolor/40">' +
+                    '<i class="fa-solid fa-circle-notch fa-spin text-emerald-400"></i>' +
+                    '<span>BNBprivate is thinking...</span>' +
+                '</div>';
+            list.appendChild(msgDiv);
+            document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
+            return id;
+        }
+
+        function removeLoadingUI(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function copyMessageText(msgId) {
+            const el = document.getElementById(msgId);
+            if (el) {
+                navigator.clipboard.writeText(el.innerText);
+                showToast("Response Copied to Clipboard");
+            }
+        }
+
+        function regenerateLastMessage() {
+            if (!currentChatId) return;
+            const chat = chats.find(c => c.id === currentChatId);
+            if (chat && chat.messages.length > 0) {
+                if (chat.messages[chat.messages.length - 1].role === 'assistant') {
+                    chat.messages.pop();
+                }
+                const lastUserPrompt = chat.messages[chat.messages.length - 1]?.content;
+                if (lastUserPrompt) {
+                    loadChat(currentChatId);
+                    sendMessage();
+                }
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
